@@ -1,118 +1,64 @@
-import os     #importing os library so as to communicate with the system
-import time   #importing time library to make Rpi wait because its too impatient 
-os.system("sudo pigpio") #Launching GPIO library
-time.sleep(1)
-import pigpio #importing GPIO library
+import RPi.GPIO as GPIO
+import time
 
-ESC=4  
+GPIO.setmode(GPIO.BOARD)  # That is BCM pin number
 
-pi = pigpio.pi();
-pi.set_servo_pulsewidth(ESC, 0) 
+MotorPinForward1 = #the pin in which we connect 1st motor for forward
+MotorPinForward2 = #the pin in which we connect 2nd motor for forward
+MotorPinBackward1 = #the pin in whiich we connect 1st motor for backward
+MotorPinBackward2 = #the pin in whiich we connect 2nd motor for backward
 
-max_value = 2000 
-min_value = 700  
-print("For first time launch, select calibrate")
-print("Type the exact word for the function you want")
-print("calibrate OR manual OR control OR arm OR stop")
+GPIO.setup(MotorPinForward1,GPIO.OUT)
+GPIO.setup(MotorPinForward1,GPIO.OUT)
+GPIO.setup(MotorPinBackward1,GPIO.OUT)
+GPIO.setup(MotorPinBackward1,GPIO.OUT)
 
-def manual_drive(): #You will use this function to program your ESC if required
-    print("You have selected manual option so give a value between 0 and you max value")
-    while True:
-        inp = input("Enter your choice")
-        if inp == "stop":
-            stop()
+
+pf1=GPIO.PWM(MotorPinForward1,50) # HERE I AM GIVING FREQUENCY AS 50Hz, CAN BE CHANGED LATER
+pf2=GPIO.PWM(MotorPinForward2,50) # HERE I AM GIVING FREQUENCY AS 50Hz, CAN BE CHANGED LATER
+pb1=GPIO.PWM(MotorPinBackward1,50) # HERE I AM GIVING FREQUENCY AS 50Hz, CAN BE CHANGED LATER
+pb2=GPIO.PWM(MotorPinBackward2,50) # HERE I AM GIVING FREQUENCY AS 50Hz, CAN BE CHANGED LATER
+
+pf1.start(0)   # We should start at the duty cycle at which motor runs at 0 speed. I guess it should be 0
+pf2.start(0)   # We should start at the duty cycle at which motor runs at 0 speed. I guess it should be 0
+pb1.start(0)   # We should start at the duty cycle at which motor runs at 0 speed. I guess it should be 0
+pb2.start(0)   # We should start at the duty cycle at which motor runs at 0 speed. I guess it should be 0
+print("PRESS F/f TO GO FORWARD")
+print("PRESS B/b TO GO BACKWARD")
+c= input("PLEASE ENTER YOUR CHOICE ")
+
+while(True):
+
+    if c == 'F' or c=='f':
+        print("ENTER THE SPEED ON A SCALE FROM 1 - 100 TO GO IN FORWARD DIRECTION")
+        s = input()
+        pf1.changeDutyCycle(s)
+        pf2.changeDutyCycle(s)
+    elif c == 'B' or c=='b':
+        print("ENTER THE SPEED ON A SCALE FROM 1 - 100 TO GO IN BACKWARD DIRECTION")
+        s = input()
+        pb1.changeDutyCycle(s)
+        pb2.changeDutyCycle(s)
+    
+    #In the above function, I am assuming that for a duty cycle of 0 the motor has 0 speed  and for duty cycle of 100, the motor runs in full speed.
+    #We can calibrate this by testing with the motor we use, and consider speed variation with respect to duty cycle as linear. 
+    #Hence, we would be able to vary the speed, based on duty cycle for which spped is 0, and maximum.
+
+    print("DO YOU WANT TO CHANGE DIRECTION OF MOTION? (Y/N) ")
+    c1 = input()
+    if c1 =='Y' or c1 =='y':
+        c= input("PLEASE ENTER YOUR CHOICE ")
+        continue
+    else:
+        print("DO YOU WANT TO STOP? (Y/N) ")
+        c2 = input()
+        if c2=='Y' or c2=='y':
             break
-        elif inp == "control":
-            control()
-            break
-        elif inp == "arm":
-            arm()
-            break	
         else:
-            pi.set_servo_pulsewidth(ESC,inp)
-                
-def calibrate():   #This is the auto calibration procedure of a normal ESC
-    pi.set_servo_pulsewidth(ESC, 0)
-    print("Disconnect the battery and press Enter")
-    inp = input()
-    if inp == '':
-        pi.set_servo_pulsewidth(ESC, max_value)
-        print("Connect the battery NOW.. you will here two beeps, then wait for a gradual falling tone then press Enter")
-        inp = input()
-        if inp == '':            
-            pi.set_servo_pulsewidth(ESC, min_value)
-            print("Wierd eh! Special tone")
-            time.sleep(7)
-            print("Wait for it ....")
-            time.sleep (5)
-            print("Im working on it, DONT WORRY JUST WAIT.....")
-            pi.set_servo_pulsewidth(ESC, 0)
-            time.sleep(2)
-            print("Arming ESC now...")
-            pi.set_servo_pulsewidth(ESC, min_value)
-            time.sleep(1)
-            print("See.... uhhhhh")
-            control()
-            
-def control(): 
-    print("I'm Starting the motor, I hope its calibrated and armed, if not restart by giving 'x'")
-    time.sleep(1)
-    speed = 1500   
-    print("Controls - a to decrease speed & d to increase speed OR q to decrease a lot of speed & e to increase a lot of speed")
-    while True:
-        pi.set_servo_pulsewidth(ESC, speed)
-        inp = input("Enter your choice")
-        
-        if inp == "q":
-            speed -= 100    # decrementing the speed at higher rate
-            print("speed = ",speed)
-        elif inp == "e":    
-            speed += 100    # incrementing the speed at higher rate
-            print ("speed = ",speed)
-        elif inp == "d":
-            speed += 10     # incrementing the speed 
-            print("speed = ", speed)
-        elif inp == "a":
-            speed -= 10     # decrementing the speed
-            print("speed = ", speed)
-        elif inp == "stop":
-            stop()          #going for the stop function
-            break
-        elif inp == "manual":
-            manual_drive()
-            break
-        elif inp == "arm":
-            arm()
-            break	
-        else:
-            print("Please press a,q,d or e")
-            
-def arm(): #This is the arming procedure of an ESC 
-    print("Connect the battery and press Enter")
-    inp = input()    
-    if inp == '':
-        pi.set_servo_pulsewidth(ESC, 0)
-        time.sleep(1)
-        pi.set_servo_pulsewidth(ESC, max_value)
-        time.sleep(1)
-        pi.set_servo_pulsewidth(ESC, min_value)
-        time.sleep(1)
-        control() 
-        
-def stop(): #This will stop every action your Pi is performing for ESC ofcourse.
-    pi.set_servo_pulsewidth(ESC, 0)
-    pi.stop()
-  
-inp = input("Enter your choice")
-if inp == "manual":
-    manual_drive()
-elif inp == "calibrate":
-    calibrate()
-elif inp == "arm":
-    arm()
-elif inp == "control":
-    control()
-elif inp == "stop":
-    stop()
-else :
-    print("invalid input")
+            continue
+
+pf1.stop()
+pf2.stop()
+pb1.stop()
+pb2.stop()
+GPIO.cleanup()  
